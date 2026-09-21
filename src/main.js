@@ -23,6 +23,9 @@ import {
 import { makeScene } from './scene.js';
 import { createAudio } from './audio.js';
 
+const SURFACE_WIDTH = 960;
+const SURFACE_HEIGHT = 1480;
+
 initializeSDK();
 
 /* ---- config ----------------------------------------------------------
@@ -130,7 +133,10 @@ const Scene = makeScene({
 			if (whole === 10) { showNeutralFeedback('10s Left!'); }
 		}
 		if (remaining <= 0) { endGame(); }
-		if (finger) { finger.setPosition(ballAt.x, ballAt.y + 40); }
+		if (finger) {
+			const fingerAt = gameToScreen(ballAt.x, ballAt.y + 40);
+			finger.setPosition(fingerAt.x, fingerAt.y);
+		}
 	},
 });
 
@@ -150,9 +156,21 @@ const scored = (at) => spawnRewards(POINTS_PER_TAP, {
 game = new Phaser.Game({
 	type: Phaser.AUTO,
 	parent: 'game',
-	// RESIZE, because the slot's shape is the host's to decide and can change
-	// under the game at any moment.
-	scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.NO_CENTER },
+	// Minit Games' recommended convention -- not an unconditional platform
+	// requirement -- is to author every game against one fixed 960x1480 design
+	// surface, scaled uniformly to whatever viewport the host hands you, rather
+	// than deriving gameplay coordinates from the viewport every frame.
+	// Scale.FIT + CENTER_BOTH is Phaser's own built-in realization of that
+	// convention: it keeps `scale.width`/`scale.height` fixed at
+	// SURFACE_WIDTH/SURFACE_HEIGHT and letterboxes (never crops) to fit any
+	// portrait aspect ratio. Canonical write-up:
+	// https://github.com/Minit-Games/minit-sdk#screen-viewport-and-scaling
+	scale: {
+		mode: Phaser.Scale.FIT,
+		autoCenter: Phaser.Scale.CENTER_BOTH,
+		width: SURFACE_WIDTH,
+		height: SURFACE_HEIGHT,
+	},
 	physics: { default: 'arcade', arcade: { gravity: { y: 0 } } },
 	// Phaser smooths delta by default; the clock differences `time` instead, so
 	// turn it off rather than leave two notions of elapsed time disagreeing.
@@ -161,13 +179,28 @@ game = new Phaser.Game({
 	scene: [Scene],
 });
 
+/* Phaser game-space (0..SURFACE_WIDTH, 0..SURFACE_HEIGHT) -> real screen CSS
+   pixels, via the canvas's current (live) letterboxed rect. The SDK's DOM HUD
+   helpers (spawnRewards, tutorial finger) default to document.body + real
+   viewport pixels, so any game-space point fed to them must be converted
+   here first -- do NOT use the SDK's `container` option instead: it assumes
+   a CSS-transform-scaled wrapper, and Phaser's Scale.FIT resizes the canvas
+   element directly rather than transforming it. */
+function gameToScreen(x, y) {
+	const rect = game.canvas.getBoundingClientRect();
+	return {
+		x: rect.left + (x / SURFACE_WIDTH) * rect.width,
+		y: rect.top + (y / SURFACE_HEIGHT) * rect.height,
+	};
+}
+
 // Bridge the scene's tap into the reward animation, which needs the HUD.
 game.events.on('ready', () => {
 	const scene = game.scene.getScene('bounce');
 	scene.input.on('pointerdown', (p) => {
 		if (!finished && Phaser.Math.Distance.Between(p.x, p.y, scene.ball.x, scene.ball.y)
 			<= Math.max(scene.ballRadius * 1.45, 30)) {
-			scored({ x: scene.ball.x, y: scene.ball.y });
+			scored(gameToScreen(scene.ball.x, scene.ball.y));
 		}
 	});
 
@@ -175,7 +208,8 @@ game.events.on('ready', () => {
 	   never sees it again. Gesture over text. */
 	if (shouldShowTutorial()) {
 		tutorial = createTutorialOverlay({ container: document.body });
-		finger = tutorial.showFinger({ x: scene.ball.x, y: scene.ball.y + 40 });
+		const fingerAt = gameToScreen(scene.ball.x, scene.ball.y + 40);
+		finger = tutorial.showFinger(fingerAt);
 		scene.input.once('pointerdown', () => {
 			if (tutorial) { tutorial.destroy(); tutorial = null; finger = null; }
 		});
