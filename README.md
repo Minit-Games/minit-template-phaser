@@ -203,9 +203,21 @@ Most are enforced by `tools/check-meta.mjs`, which runs on every build.
   instead, and fails on anything off-origin.
 - **Touch only.** Pointer events throughout, tap targets past 44 px, no hover
   and no keyboard.
-- **Portrait, any aspect ratio.** The app's slot is nearer 2:3 than the 9:18 a
-  phone screen suggests, and differs again on the web player — so nothing is
-  hardcoded and the layout is measured from the live viewport.
+- **Portrait, one fixed 960×1480 design surface, scaled to fit.** The app's
+  slot is nearer 2:3 than the 9:18 a phone screen suggests, and differs again
+  on the web player, so `src/main.js`'s game config authors every position
+  against a single fixed surface (`width: 960, height: 1480`) and scales it
+  with `Phaser.Scale.FIT` + `Phaser.Scale.CENTER_BOTH`, rather than deriving
+  gameplay coordinates from the viewport. This is Phaser's own built-in,
+  engine-native realization of the convention — no hand-rolled CSS-transform
+  wrapper, unlike the Pixi/vanilla/Three templates. `Scale.FIT` letterboxes
+  rather than crops, so nothing is ever cropped: the full 960×1480 surface
+  stays fully visible, letterboxed to fit whatever portrait aspect ratio the
+  host hands it. This is the Minit Games **recommended** layout convention,
+  not an unconditional platform requirement; the canonical source is the
+  `@minit-games/sdk` package README's own "Screen, viewport, and scaling"
+  section:
+  [Minit-Games/minit-sdk § "Screen, viewport, and scaling"](https://github.com/Minit-Games/minit-sdk#screen-viewport-and-scaling).
 
 ## Regenerating the music
 
