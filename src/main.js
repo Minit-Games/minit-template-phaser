@@ -77,7 +77,7 @@ function endGame() {
 		? `Best rally: ${bestRally} taps without a bounce`
 		: `${bounces} bounce${bounces === 1 ? '' : 's'} off the grass`;
 
-	reportResult(score, { flavorText, userData: 'played' });
+	reportResult(score, { flavorText });
 	// The host overlays its result screen and takes focus, so there is nothing
 	// left worth simulating.
 	game?.scene.pause('bounce');
@@ -204,8 +204,7 @@ game.events.on('ready', () => {
 		}
 	});
 
-	/* Gated by the host's userData: a returning player has a value stored and
-	   never sees it again. Gesture over text. */
+	// The host decides who has already played; teach by gesture, not text.
 	if (shouldShowTutorial()) {
 		tutorial = createTutorialOverlay({ container: document.body });
 		const fingerAt = gameToScreen(scene.ball.x, scene.ball.y + 40);
