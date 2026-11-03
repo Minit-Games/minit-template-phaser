@@ -22,7 +22,7 @@ const RESTITUTION = 0.62;
 const TAP_IMPULSE = 1150;
 const HORIZON = 0.62;          // sky above, grass below
 
-export function makeScene({ onTap, onBounce, onUpdate }) {
+export function makeScene({ particleCount, onTap, onBounce, onUpdate }) {
 	return class BounceScene extends Phaser.Scene {
 		constructor() { super('bounce'); }
 
@@ -171,7 +171,9 @@ export function makeScene({ onTap, onBounce, onUpdate }) {
 			const g = this.physics.world.gravity.y;
 			this.ball.setVelocityY(-Math.min(TAP_IMPULSE * scale, Math.sqrt(2 * g * headroom)));
 			this.ball.setVelocityX(this.ball.body.velocity.x + (dx / reach) * 320 * scale);
-			this.particles.emitParticleAt(this.ball.x, this.ball.y + this.ballRadius * 0.3, 12);
+			if (particleCount > 0) {
+				this.particles.emitParticleAt(this.ball.x, this.ball.y + this.ballRadius * 0.3, particleCount);
+			}
 			onTap();
 			return true;
 		}

@@ -25,6 +25,16 @@ Upload `dist/minit-template-phaser.zip` at [console.minit.games](https://console
 
 **Size.** ~2.07 MB built (623 KB gzipped). Phaser is the largest of these engines; well under the 5 MB ceiling, well over the "under 1 MB" guidance.
 
+## Device-adaptive effects
+
+The example in `src/main.js` adapts the particle burst to the player's motion
+preference, motion quality and device tier. On an SDK without these getters,
+the example falls back to the browser's reduced-motion setting. The
+`?motionQuality=reduced`, `?deviceTier=low` and `?reducedMotion=1` URL overrides
+take effect once the SDK provides the getters. See
+[Device-Adaptive Effects](https://minit.studio/docs/device-adaptive-effects) for
+the available getters and recommended patterns.
+
 ## Tools and configuration
 
 Everything in `tools/` needs **Node 22 or newer** and a Chromium-based browser.

@@ -14,7 +14,10 @@
    update rather than a requestAnimationFrame of their own.
    ========================================================================== */
 import Phaser from 'phaser';
-import { initializeSDK, getConfigValue, reportResult, loadingDone } from '@minit-games/sdk';
+import {
+	initializeSDK, loadingDone, reportResult, getConfigValue,
+} from '@minit-games/sdk';
+import * as Minit from '@minit-games/sdk';
 import {
 	createHeaderBar, showPositiveFeedback, showNeutralFeedback, preloadFeedbackFont,
 	spawnRewards, shouldShowTutorial, createTutorialOverlay,
@@ -35,6 +38,21 @@ initializeSDK();
 const POINTS_PER_TAP = Math.max(1, Number(getConfigValue('pointsPerTap', '10')) || 10);
 const SOUND_ON = getConfigValue('sound', 'true') === 'true';
 const MUSIC_ON = getConfigValue('music', 'true') === 'true';
+
+/* ---- effects ---------------------------------------------------------
+   Feature detection keeps web previews working until the adaptive getters
+   are available in the installed SDK. */
+const REDUCED_MOTION = typeof Minit.prefersReducedMotion === 'function'
+	? Minit.prefersReducedMotion()
+	: typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOTION_QUALITY = typeof Minit.getMotionQuality === 'function'
+	? Minit.getMotionQuality()
+	: REDUCED_MOTION ? 'reduced' : 'full';
+const DEVICE_TIER = typeof Minit.getDeviceTier === 'function' ? Minit.getDeviceTier() : 'unknown';
+const PARTICLES_BY_TIER = { high: 16, medium: 12, low: 6, unknown: 12 };
+const PARTICLE_COUNT = REDUCED_MOTION
+	? 0
+	: MOTION_QUALITY === 'reduced' ? 3 : (PARTICLES_BY_TIER[DEVICE_TIER] ?? 12);
 
 /* How long a run lasts. The host owns everything either side of the run, so
    the game ends itself on a clock rather than offering a button to press. */
@@ -84,6 +102,8 @@ function endGame() {
 }
 
 const Scene = makeScene({
+	particleCount: PARTICLE_COUNT,
+
 	onTap() {
 		// The gesture that reaches the scene is also the one that unlocks audio:
 		// a context resumed outside a gesture stays suspended, and everything
