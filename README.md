@@ -28,10 +28,10 @@ Upload `dist/minit-template-phaser.zip` at [console.minit.games](https://console
 ## Device-adaptive effects
 
 The example in `src/main.js` adapts the particle burst to the player's motion
-preference, motion quality and device tier. With SDK 1.19.0 or newer, try the
-reduced effect locally at `http://localhost:5173/?motionQuality=reduced`.
-Until then, the example falls back to the browser's reduced-motion preference
-and otherwise keeps the default effect. See
+preference, motion quality and device tier. On an SDK without these getters,
+the example falls back to the browser's reduced-motion setting. The
+`?motionQuality=reduced`, `?deviceTier=low` and `?reducedMotion=1` URL overrides
+take effect once the SDK provides the getters. See
 [Device-Adaptive Effects](https://minit.studio/docs/device-adaptive-effects) for
 the available getters and recommended patterns.
 

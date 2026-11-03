@@ -14,7 +14,10 @@
    update rather than a requestAnimationFrame of their own.
    ========================================================================== */
 import Phaser from 'phaser';
-import * as sdk from '@minit-games/sdk';
+import {
+	initializeSDK, loadingDone, reportResult, getConfigValue,
+} from '@minit-games/sdk';
+import * as Minit from '@minit-games/sdk';
 import {
 	createHeaderBar, showPositiveFeedback, showNeutralFeedback, preloadFeedbackFont,
 	spawnRewards, shouldShowTutorial, createTutorialOverlay,
@@ -26,24 +29,26 @@ import { createAudio } from './audio.js';
 const SURFACE_WIDTH = 960;
 const SURFACE_HEIGHT = 1480;
 
-sdk.initializeSDK();
+initializeSDK();
 
 /* ---- config ----------------------------------------------------------
    Config values always arrive as strings -- the host appends every declared
    key to the game URL. Coerce, and keep a default so `npm run dev` and a
    direct URL still work. The keys are declared in public/meta.json. */
-const POINTS_PER_TAP = Math.max(1, Number(sdk.getConfigValue('pointsPerTap', '10')) || 10);
-const SOUND_ON = sdk.getConfigValue('sound', 'true') === 'true';
-const MUSIC_ON = sdk.getConfigValue('music', 'true') === 'true';
+const POINTS_PER_TAP = Math.max(1, Number(getConfigValue('pointsPerTap', '10')) || 10);
+const SOUND_ON = getConfigValue('sound', 'true') === 'true';
+const MUSIC_ON = getConfigValue('music', 'true') === 'true';
 
 /* ---- effects ---------------------------------------------------------
    Feature detection keeps web previews working until the adaptive getters
    are available in the installed SDK. */
-const REDUCED_MOTION = typeof sdk.prefersReducedMotion === 'function'
-	? sdk.prefersReducedMotion()
+const REDUCED_MOTION = typeof Minit.prefersReducedMotion === 'function'
+	? Minit.prefersReducedMotion()
 	: typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const MOTION_QUALITY = typeof sdk.getMotionQuality === 'function' ? sdk.getMotionQuality() : 'full';
-const DEVICE_TIER = typeof sdk.getDeviceTier === 'function' ? sdk.getDeviceTier() : 'unknown';
+const MOTION_QUALITY = typeof Minit.getMotionQuality === 'function'
+	? Minit.getMotionQuality()
+	: REDUCED_MOTION ? 'reduced' : 'full';
+const DEVICE_TIER = typeof Minit.getDeviceTier === 'function' ? Minit.getDeviceTier() : 'unknown';
 const PARTICLES_BY_TIER = { high: 16, medium: 12, low: 6, unknown: 12 };
 const PARTICLE_COUNT = REDUCED_MOTION
 	? 0
@@ -90,7 +95,7 @@ function endGame() {
 		? `Best rally: ${bestRally} taps without a bounce`
 		: `${bounces} bounce${bounces === 1 ? '' : 's'} off the grass`;
 
-	sdk.reportResult(score, { flavorText });
+	reportResult(score, { flavorText });
 	// The host overlays its result screen and takes focus, so there is nothing
 	// left worth simulating.
 	game?.scene.pause('bounce');
@@ -130,7 +135,7 @@ const Scene = makeScene({
 			lastTime = time;
 			// The app holds a loading screen over the WebView until this fires,
 			// so it goes as soon as there is a real frame.
-			sdk.loadingDone();
+			loadingDone();
 		}
 		if (finished) { return; }
 
