@@ -14,7 +14,7 @@
    update rather than a requestAnimationFrame of their own.
    ========================================================================== */
 import Phaser from 'phaser';
-import { initializeSDK, getConfigValue, reportResult, loadingDone } from '@minit-games/sdk';
+import * as sdk from '@minit-games/sdk';
 import {
 	createHeaderBar, showPositiveFeedback, showNeutralFeedback, preloadFeedbackFont,
 	spawnRewards, shouldShowTutorial, createTutorialOverlay,
@@ -26,15 +26,28 @@ import { createAudio } from './audio.js';
 const SURFACE_WIDTH = 960;
 const SURFACE_HEIGHT = 1480;
 
-initializeSDK();
+sdk.initializeSDK();
 
 /* ---- config ----------------------------------------------------------
    Config values always arrive as strings -- the host appends every declared
    key to the game URL. Coerce, and keep a default so `npm run dev` and a
    direct URL still work. The keys are declared in public/meta.json. */
-const POINTS_PER_TAP = Math.max(1, Number(getConfigValue('pointsPerTap', '10')) || 10);
-const SOUND_ON = getConfigValue('sound', 'true') === 'true';
-const MUSIC_ON = getConfigValue('music', 'true') === 'true';
+const POINTS_PER_TAP = Math.max(1, Number(sdk.getConfigValue('pointsPerTap', '10')) || 10);
+const SOUND_ON = sdk.getConfigValue('sound', 'true') === 'true';
+const MUSIC_ON = sdk.getConfigValue('music', 'true') === 'true';
+
+/* ---- effects ---------------------------------------------------------
+   Feature detection keeps web previews working until the adaptive getters
+   are available in the installed SDK. */
+const REDUCED_MOTION = typeof sdk.prefersReducedMotion === 'function'
+	? sdk.prefersReducedMotion()
+	: typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOTION_QUALITY = typeof sdk.getMotionQuality === 'function' ? sdk.getMotionQuality() : 'full';
+const DEVICE_TIER = typeof sdk.getDeviceTier === 'function' ? sdk.getDeviceTier() : 'unknown';
+const PARTICLES_BY_TIER = { high: 16, medium: 12, low: 6, unknown: 12 };
+const PARTICLE_COUNT = REDUCED_MOTION
+	? 0
+	: MOTION_QUALITY === 'reduced' ? 3 : (PARTICLES_BY_TIER[DEVICE_TIER] ?? 12);
 
 /* How long a run lasts. The host owns everything either side of the run, so
    the game ends itself on a clock rather than offering a button to press. */
@@ -77,13 +90,15 @@ function endGame() {
 		? `Best rally: ${bestRally} taps without a bounce`
 		: `${bounces} bounce${bounces === 1 ? '' : 's'} off the grass`;
 
-	reportResult(score, { flavorText });
+	sdk.reportResult(score, { flavorText });
 	// The host overlays its result screen and takes focus, so there is nothing
 	// left worth simulating.
 	game?.scene.pause('bounce');
 }
 
 const Scene = makeScene({
+	particleCount: PARTICLE_COUNT,
+
 	onTap() {
 		// The gesture that reaches the scene is also the one that unlocks audio:
 		// a context resumed outside a gesture stays suspended, and everything
@@ -115,7 +130,7 @@ const Scene = makeScene({
 			lastTime = time;
 			// The app holds a loading screen over the WebView until this fires,
 			// so it goes as soon as there is a real frame.
-			loadingDone();
+			sdk.loadingDone();
 		}
 		if (finished) { return; }
 
