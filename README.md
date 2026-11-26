@@ -21,7 +21,7 @@ npm run dev        # local dev server
 npm run package    # build, verify, and write dist/minit-template-phaser.zip
 ```
 
-Upload `dist/minit-template-phaser.zip` at [console.minit.games](https://console.minit.games).
+Upload `dist/minit-template-phaser.zip` at [minit.studio](https://minit.studio).
 
 **Size.** ~2.07 MB built (623 KB gzipped). Phaser is the largest of these engines; well under the 5 MB ceiling, well over the "under 1 MB" guidance.
 
